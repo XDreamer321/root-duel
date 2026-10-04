@@ -58,7 +58,7 @@ class RootDuelGame {
         // UI references cache
         this.dom = {};
         // Version
-        this.version = '1.1.2';
+        this.version = '1.2.0';
     }
 
     init() {
@@ -103,11 +103,15 @@ class RootDuelGame {
         this.dom.p1TimerBar = document.getElementById('p1-timer-bar');
         this.dom.p2TimerBar = document.getElementById('p2-timer-bar');
 
-        // Central TV Board
+        // Central TV Board (Dual View Support)
         this.dom.mathBoard = document.getElementById('math-board');
-        this.dom.mathFormula = document.getElementById('math-formula');
+        this.dom.mathFormulaP1 = document.getElementById('math-formula-p1');
+        this.dom.mathFormulaP2 = document.getElementById('math-formula-p2');
+        this.dom.mathFormula = this.dom.mathFormulaP1 || document.getElementById('math-formula');
         this.dom.roundBadge = document.getElementById('round-badge');
         this.dom.pointsTicker = document.getElementById('points-ticker');
+        this.dom.boardFeedbackP1 = document.getElementById('board-feedback-p1');
+        this.dom.boardFeedbackP2 = document.getElementById('board-feedback-p2');
         this.dom.boardFeedback = document.getElementById('board-feedback');
         this.dom.boardHint = document.getElementById('board-hint');
 
@@ -178,6 +182,37 @@ class RootDuelGame {
         // Update player 2 name if 1P
         this.players[2].name = this.mode === '1p' ? `ИИ (${this.difficulty.toUpperCase()})` : 'ИГРОК 2';
         if (this.dom.p2Name) this.dom.p2Name.textContent = this.players[2].name;
+
+        // Update dual orientation chalkboard view
+        this.updateBoardDualView();
+    }
+
+    updateBoardDualView() {
+        const isDual = (this.mode === '2p' && this.player2Rotated);
+        if (this.dom.mathBoard) {
+            this.dom.mathBoard.classList.toggle('dual-active', isDual);
+        }
+    }
+
+    setBoardFeedback(text, typeClass) {
+        const setEl = (el, isP2 = false) => {
+            if (!el) return;
+            const extra = isP2 ? ' feedback-p2 rotated-180' : (el === this.dom.boardFeedbackP1 ? ' feedback-p1' : '');
+            if (text) {
+                el.textContent = text;
+                el.className = `board-feedback ${typeClass}${extra}`;
+                el.classList.remove('hidden');
+                el.style.display = '';
+            } else {
+                el.textContent = '';
+                el.className = `board-feedback hidden${extra}`;
+                el.style.display = 'none';
+            }
+        };
+
+        setEl(this.dom.boardFeedbackP1, false);
+        setEl(this.dom.boardFeedbackP2, true);
+        setEl(this.dom.boardFeedback, false);
     }
 
     updateMenuOptionHighlight(group, value) {
@@ -540,8 +575,7 @@ class RootDuelGame {
         this.dom.pointsTicker.className = 'points-ticker active';
 
         // Clear feedback banner
-        this.dom.boardFeedback.textContent = '';
-        this.dom.boardFeedback.className = 'board-feedback hidden';
+        this.setBoardFeedback('', 'hidden');
         this.dom.boardHint.textContent = '';
 
         // Start decaying points timer & timestamp
@@ -579,31 +613,37 @@ class RootDuelGame {
     }
 
     renderQuestion(q) {
-        if (!this.dom.mathFormula) return;
+        this.updateBoardDualView();
 
-        // Try KaTeX if available
-        let renderedWithKaTeX = false;
-        if (window.katex && q.latex) {
-            try {
-                window.katex.render(q.latex, this.dom.mathFormula, {
-                    displayMode: true,
-                    throwOnError: false
-                });
-                renderedWithKaTeX = true;
-            } catch (e) {
-                console.warn('KaTeX render error:', e);
+        const targets = [this.dom.mathFormulaP1, this.dom.mathFormulaP2].filter(Boolean);
+        if (targets.length === 0 && this.dom.mathFormula) targets.push(this.dom.mathFormula);
+
+        targets.forEach(targetEl => {
+            let renderedWithKaTeX = false;
+            if (window.katex && q.latex) {
+                try {
+                    window.katex.render(q.latex, targetEl, {
+                        displayMode: true,
+                        throwOnError: false
+                    });
+                    renderedWithKaTeX = true;
+                } catch (e) {
+                    console.warn('KaTeX render error:', e);
+                }
             }
-        }
 
-        // Fallback to unicode
-        if (!renderedWithKaTeX) {
-            this.dom.mathFormula.innerHTML = `<span class="unicode-math">${q.unicode}</span>`;
-        }
+            // Fallback to unicode
+            if (!renderedWithKaTeX) {
+                targetEl.innerHTML = `<span class="unicode-math">${q.unicode}</span>`;
+            }
+        });
 
         // Board pop animation
-        this.dom.mathBoard.classList.remove('pulse-in');
-        void this.dom.mathBoard.offsetWidth; // Force reflow
-        this.dom.mathBoard.classList.add('pulse-in');
+        if (this.dom.mathBoard) {
+            this.dom.mathBoard.classList.remove('pulse-in');
+            void this.dom.mathBoard.offsetWidth; // Force reflow
+            this.dom.mathBoard.classList.add('pulse-in');
+        }
     }
 
     /* -------------------------------------------------------------
@@ -825,8 +865,7 @@ class RootDuelGame {
         this.dom.p2BuzzBtn.classList.remove('pulse');
 
         // Board Announcement
-        this.dom.boardFeedback.textContent = `ПРАВИЛЬНО! ${this.players[playerId].name} +${earned}`;
-        this.dom.boardFeedback.className = 'board-feedback correct';
+        this.setBoardFeedback(`ПРАВИЛЬНО! ${this.players[playerId].name} +${earned}`, 'correct');
         this.dom.boardHint.textContent = `Ответ: ${this.currentQuestion.answer} (${this.currentQuestion.hint})`;
 
         // Wait then next question
@@ -870,8 +909,7 @@ class RootDuelGame {
         this.dom.p2BuzzBtn.classList.remove('pulse');
 
         // Board Announcement with correct answer and hint
-        this.dom.boardFeedback.textContent = isTimeout ? 'ВРЕМЯ ВЫШЛО!' : `ОШИБКА ${this.players[playerId].name}! (-5)`;
-        this.dom.boardFeedback.className = 'board-feedback wrong';
+        this.setBoardFeedback(isTimeout ? 'ВРЕМЯ ВЫШЛО!' : `ОШИБКА ${this.players[playerId].name}! (-5)`, 'wrong');
         this.dom.boardHint.textContent = `Правильный ответ: ${this.currentQuestion.answer} (${this.currentQuestion.hint})`;
 
         // Automatically pass turn to next round
@@ -883,7 +921,11 @@ class RootDuelGame {
     }
 
     onRoundTimeout() {
-        this.audio.playTimeout();
+        try {
+            this.audio.playTimeout();
+        } catch (e) {
+            console.warn('Audio error:', e);
+        }
         this.revealAnswerAfterFailure();
     }
 
@@ -905,8 +947,7 @@ class RootDuelGame {
         this.dom.p1BuzzBtn.classList.remove('pulse');
         this.dom.p2BuzzBtn.classList.remove('pulse');
 
-        this.dom.boardFeedback.textContent = `ПРАВИЛЬНЫЙ ОТВЕТ: ${this.currentQuestion.answer}`;
-        this.dom.boardFeedback.className = 'board-feedback neutral';
+        this.setBoardFeedback(`ПРАВИЛЬНЫЙ ОТВЕТ: ${this.currentQuestion.answer}`, 'neutral');
         this.dom.boardHint.textContent = this.currentQuestion.hint;
 
         setTimeout(() => {

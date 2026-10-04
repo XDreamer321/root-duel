@@ -18,7 +18,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
     <!-- Game Stylesheet -->
-    <link rel="stylesheet" href="css/style.css?v=1.1.2">
+    <link rel="stylesheet" href="css/style.css?v=1.2.0">
 </head>
 <body>
     <div id="app">
@@ -27,7 +27,7 @@
             <div class="logo-wrap">
                 <span class="logo-badge">TV</span>
                 <span class="logo-title">ROOT DUEL</span>
-                <span class="version-badge">v1.1.2</span>
+                <span class="version-badge">v1.2.0</span>
             </div>
             <div class="header-actions">
                 <button id="btn-rotate-p2" class="icon-btn active" title="Перевернуть экран Игрока 2 на 180° для дуэли лицом к лицу">🔄</button>
@@ -96,12 +96,12 @@
                 <!-- Site Version Footer -->
                 <div class="site-version-footer">
                     <span>ROOT DUEL</span>
-                    <span class="version-tag">v1.1.2</span>
+                    <span class="version-tag">v1.2.0</span>
                     <span>• GitHub Pages</span>
                 </div>
             </div>
             <div class="menu-bottom-indicator">
-                Версия сайта: <strong>v1.1.2</strong>
+                Версия сайта: <strong>v1.2.0</strong>
             </div>
         </main>
 
@@ -167,17 +167,27 @@
 
                 <!-- CENTRAL TV MATH CHALKBOARD -->
                 <div class="math-board-wrapper">
-                    <div id="math-board" class="tv-chalkboard">
-                        <div class="board-top-row">
+                    <div id="math-board" class="tv-chalkboard dual-active">
+                        <!-- TOP DISPLAY: Inverted 180° for Player 2 -->
+                        <div id="board-feedback-p2" class="board-feedback feedback-p2 rotated-180 hidden"></div>
+                        <div id="math-formula-p2" class="math-formula-container formula-p2 rotated-180">
+                            <span class="unicode-math">√144 = ?</span>
+                        </div>
+
+                        <!-- CENTER HUD STRIP: Round & Points Ticker -->
+                        <div class="board-center-strip">
                             <span id="round-badge" class="round-badge">РАУНД 1 / 10</span>
                             <span id="points-ticker" class="points-ticker">+50 ОЧКОВ</span>
                         </div>
                         
-                        <div id="math-formula" class="math-formula-container">
+                        <!-- BOTTOM DISPLAY: Normal for Player 1 -->
+                        <div id="math-formula-p1" class="math-formula-container formula-p1">
                             <span class="unicode-math">√144 = ?</span>
                         </div>
+                        <div id="board-feedback-p1" class="board-feedback feedback-p1 hidden"></div>
 
-                        <div id="board-feedback" class="board-feedback hidden"></div>
+                        <!-- Shared hint and legacy compat feedback -->
+                        <div id="board-feedback" class="board-feedback hidden" style="display:none;"></div>
                         <div id="board-hint" class="board-hint"></div>
                     </div>
                 </div>
@@ -316,9 +326,9 @@
     </div>
 
     <!-- Game Scripts -->
-    <script src="js/audio.js?v=1.1.2"></script>
-    <script src="js/questions.js?v=1.1.2"></script>
-    <script src="js/ai.js?v=1.1.2"></script>
-    <script src="js/game.js?v=1.1.2"></script>
+    <script src="js/audio.js?v=1.2.0"></script>
+    <script src="js/questions.js?v=1.2.0"></script>
+    <script src="js/ai.js?v=1.2.0"></script>
+    <script src="js/game.js?v=1.2.0"></script>
 </body>
 </html>
