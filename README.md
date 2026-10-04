@@ -2,7 +2,10 @@
 
 Полноценная браузерная игра в стиле телевизионной математической дуэли для двоих игроков на одном смартфоне или одного игрока против адаптивного искусственного интеллекта.
 
+🎮 **Играть онлайн прямо со смартфона:** [https://xdreamer321.github.io/root-duel/](https://xdreamer321.github.io/root-duel/)
+
 ![Mobile First](https://img.shields.io/badge/Platform-Mobile--First%20%7C%20iOS%20%26%20Android-blue)
+![Live Demo](https://img.shields.io/badge/GitHub%20Pages-Live%20Demo-success)
 ![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20JS%20%2B%20Web%20Audio)-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-gold)
 
