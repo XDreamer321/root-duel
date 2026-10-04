@@ -287,6 +287,58 @@ class RootDuelGame {
 
         // Desktop Keyboard Controls
         window.addEventListener('keydown', (e) => this.handleKeyboardInput(e));
+
+        // Background / App Switch / Phone Lock Handling
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.onAppPause();
+            } else {
+                this.onAppResume();
+            }
+        });
+        window.addEventListener('pagehide', () => this.onAppPause());
+        window.addEventListener('blur', () => {
+            if (document.hidden) this.onAppPause();
+        });
+        window.addEventListener('focus', () => {
+            if (!document.hidden) this.onAppResume();
+        });
+    }
+
+    onAppPause() {
+        this.isBackgroundPaused = true;
+        if (this.roundScoreTimer) {
+            clearInterval(this.roundScoreTimer);
+            this.roundScoreTimer = null;
+        }
+        if (this.answerTimer) {
+            clearInterval(this.answerTimer);
+            this.answerTimer = null;
+        }
+        if (this.ai) {
+            this.ai.cancel();
+        }
+        if (this.audio) {
+            this.audio.suspend();
+        }
+    }
+
+    onAppResume() {
+        if (!this.isBackgroundPaused) return;
+        this.isBackgroundPaused = false;
+
+        if (this.audio) {
+            this.audio.resume();
+        }
+
+        if (this.state === 'PLAYING') {
+            this.startPointsDecay();
+            if (this.mode === '1p' && this.currentQuestion) {
+                this.ai.onRoundStart(this.currentQuestion);
+            }
+        } else if (this.state === 'ANSWERING' && this.activePlayer) {
+            this.startAnswerCountdown(this.activePlayer, 5);
+        }
     }
 
     setupBuzzButton(btn, playerId) {
@@ -488,8 +540,8 @@ class RootDuelGame {
         if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
 
         this.roundScoreTimer = setInterval(() => {
-            if (this.state !== 'PLAYING') {
-                clearInterval(this.roundScoreTimer);
+            if (this.state !== 'PLAYING' || document.hidden) {
+                if (this.state !== 'PLAYING') clearInterval(this.roundScoreTimer);
                 return;
             }
 
@@ -589,6 +641,7 @@ class RootDuelGame {
         }
 
         this.answerTimer = setInterval(() => {
+            if (document.hidden) return;
             const elapsed = performance.now() - startTime;
             const remainingRatio = Math.max(0, 1 - (elapsed / totalMs));
 

@@ -15,9 +15,21 @@ class SoundEngine {
         if (savedMute !== null) {
             this.muted = savedMute === 'true';
         }
+
+        // Handle page visibility and backgrounding on mobile/desktop
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.suspend();
+            } else {
+                this.resume();
+            }
+        });
+        window.addEventListener('pagehide', () => this.suspend());
+        window.addEventListener('freeze', () => this.suspend());
     }
 
     init() {
+        if (document.hidden) return;
         if (!this.ctx) {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (AudioCtx) {
@@ -25,14 +37,29 @@ class SoundEngine {
                 this.initialized = true;
             }
         }
-        if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume();
+        if (this.ctx && this.ctx.state === 'suspended' && !document.hidden) {
+            this.ctx.resume().catch(() => {});
+        }
+    }
+
+    suspend() {
+        if (this.ctx && this.ctx.state === 'running') {
+            this.ctx.suspend().catch(() => {});
+        }
+    }
+
+    resume() {
+        if (this.ctx && this.ctx.state === 'suspended' && !this.muted && !document.hidden) {
+            this.ctx.resume().catch(() => {});
         }
     }
 
     setMuted(muted) {
         this.muted = muted;
         localStorage.setItem('root_duel_muted', muted);
+        if (muted) {
+            this.suspend();
+        }
     }
 
     toggleMute() {
@@ -42,9 +69,9 @@ class SoundEngine {
 
     // Generic tone helper
     playTone(freq, duration, type = 'sine', gainVal = 0.3, delay = 0) {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         this.init();
-        if (!this.ctx) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
 
         const startTime = this.ctx.currentTime + delay;
         const osc = this.ctx.createOscillator();
@@ -65,9 +92,9 @@ class SoundEngine {
 
     // UI Click sound (crisp tap)
     playClick() {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         this.init();
-        if (!this.ctx) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
 
         const startTime = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
@@ -89,16 +116,16 @@ class SoundEngine {
 
     // Keypad number tap
     playKeyTap(num = 5) {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         const baseFreq = 440 + (num * 30);
         this.playTone(baseFreq, 0.05, 'sine', 0.15);
     }
 
     // Buzz-in sound (dramatic TV show buzz)
     playBuzzIn(player = 1) {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         this.init();
-        if (!this.ctx) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
 
         const startTime = this.ctx.currentTime;
         const freq = player === 1 ? 520 : 680;
@@ -132,7 +159,7 @@ class SoundEngine {
 
     // Countdown beeps (3, 2, 1, GO)
     playCountdown(isFinal = false) {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         if (isFinal) {
             // High GO fanfare note
             this.playTone(880, 0.45, 'triangle', 0.4);
@@ -145,13 +172,13 @@ class SoundEngine {
 
     // Timer tick (subtle studio clock)
     playTick() {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         this.playTone(900, 0.03, 'sine', 0.05);
     }
 
     // Correct Answer - joyful TV arpeggio
     playCorrect() {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
         notes.forEach((freq, idx) => {
             this.playTone(freq, 0.25, 'triangle', 0.25, idx * 0.07);
@@ -161,9 +188,9 @@ class SoundEngine {
 
     // Wrong Answer - TV error buzzer
     playWrong() {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         this.init();
-        if (!this.ctx) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
 
         const startTime = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
@@ -185,19 +212,20 @@ class SoundEngine {
 
         osc.start(startTime);
         osc2.start(startTime);
+        osc1.stop ? null : null;
         osc.stop(startTime + 0.35);
         osc2.stop(startTime + 0.35);
     }
 
     // Time-out buzzer
     playTimeout() {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         this.playWrong();
     }
 
     // Victory Fanfare
     playVictory() {
-        if (this.muted) return;
+        if (this.muted || document.hidden) return;
         const melody = [
             { f: 523.25, d: 0.15, delay: 0.0 },   // C5
             { f: 659.25, d: 0.15, delay: 0.15 },  // E5
