@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050814">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>ROOT DUEL - Телевизионная Математическая Дуэль</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for formula rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+    <!-- Game Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- TOP TV HEADER -->
+        <header class="top-header">
+            <div class="logo-wrap">
+                <span class="logo-badge">TV</span>
+                <span class="logo-title">ROOT DUEL</span>
+            </div>
+            <div class="header-actions">
+                <button id="btn-rotate-p2" class="icon-btn active" title="Перевернуть экран Игрока 2 на 180° для дуэли лицом к лицу">🔄</button>
+                <button id="btn-mute" class="icon-btn" title="Звук">🔊</button>
+                <button id="btn-fullscreen" class="icon-btn" title="На весь экран">⛶</button>
+                <button id="btn-open-settings" class="icon-btn" title="Настройки и подсказки">⚙️</button>
+                <button id="btn-back-menu" class="icon-btn" title="Выход в меню">🏠</button>
+            </div>
+        </header>
+
+        <!-- SCREEN 1: START MENU -->
+        <main id="screen-menu" class="screen active">
+            <div class="menu-card">
+                <div class="menu-hero">
+                    <h1>ROOT DUEL</h1>
+                    <p>ТЕЛЕВИЗИОННАЯ МАТЕМАТИЧЕСКАЯ ДУЭЛЬ</p>
+                </div>
+
+                <!-- Mode Selection -->
+                <div class="config-group">
+                    <div class="config-label">Режим игры</div>
+                    <div class="button-grid grid-2">
+                        <button class="choice-btn selected" data-setting="mode" data-val="2p">👥 2 ИГРОКА (1 ТЕЛЕФОН)</button>
+                        <button class="choice-btn" data-setting="mode" data-val="1p">🤖 1 ИГРОК (VS ИИ)</button>
+                    </div>
+                </div>
+
+                <!-- Category Selection -->
+                <div class="config-group">
+                    <div class="config-label">Категория заданий</div>
+                    <div class="button-grid grid-3">
+                        <button class="choice-btn selected" data-setting="category" data-val="roots_sq">√ КВАДРАТ</button>
+                        <button class="choice-btn" data-setting="category" data-val="roots_cb">∛ КУБЫ</button>
+                        <button class="choice-btn" data-setting="category" data-val="powers">X² СТЕПЕНИ</button>
+                    </div>
+                    <div class="button-grid grid-2" style="margin-top: 4px;">
+                        <button class="choice-btn" data-setting="category" data-val="expressions">± ВЫРАЖЕНИЯ</button>
+                        <button class="choice-btn" data-setting="category" data-val="mixed">🎲 СМЕШАННЫЕ</button>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selection -->
+                <div class="config-group">
+                    <div class="config-label">Сложность</div>
+                    <div class="button-grid grid-3">
+                        <button class="choice-btn" data-setting="difficulty" data-val="easy">ЛЕГКО</button>
+                        <button class="choice-btn selected" data-setting="difficulty" data-val="normal">НОРМА</button>
+                        <button class="choice-btn" data-setting="difficulty" data-val="hard">ХАРД</button>
+                    </div>
+                </div>
+
+                <!-- Rounds Selection -->
+                <div class="config-group">
+                    <div class="config-label">Количество вопросов</div>
+                    <div class="button-grid grid-4">
+                        <button class="choice-btn" data-setting="rounds" data-val="5">5</button>
+                        <button class="choice-btn selected" data-setting="rounds" data-val="10">10</button>
+                        <button class="choice-btn" data-setting="rounds" data-val="15">15</button>
+                        <button class="choice-btn" data-setting="rounds" data-val="20">20</button>
+                    </div>
+                </div>
+
+                <!-- Start Action -->
+                <button id="btn-start-game" class="btn-start">НАЧАТЬ МАТЧ</button>
+            </div>
+        </main>
+
+        <!-- SCREEN 2: COUNTDOWN -->
+        <div id="screen-countdown" class="screen">
+            <div class="countdown-box">
+                <div id="countdown-number" class="countdown-num">3</div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: DUEL ARENA -->
+        <main id="screen-game" class="screen">
+            <div id="duel-arena" class="duel-arena">
+                
+                <!-- PLAYER 2 ZONE (TOP) -->
+                <section id="player-2-zone" class="player-zone p2-theme rotated-180">
+                    <div class="player-info-bar">
+                        <span id="p2-name-display" class="player-name-badge">ИГРОК 2</span>
+                        <span id="p2-status-msg" class="player-status-badge idle">ЖМИ КНОПКУ!</span>
+                        <span id="p2-score-val" class="player-score-badge">0</span>
+                    </div>
+
+                    <!-- Timer Bar for Answering Window -->
+                    <div class="answer-timer-track">
+                        <div id="p2-timer-bar" class="answer-timer-bar"></div>
+                    </div>
+
+                    <!-- Big Buzz Button -->
+                    <button id="p2-buzz-btn" class="btn-buzz" type="button">
+                        ⚡ ОТВЕТИТЬ (ЖМИ!)
+                    </button>
+
+                    <!-- Answer Input Display & Submit Action -->
+                    <div class="answer-box-wrap">
+                        <div id="p2-input-display" class="answer-input-display">?</div>
+                        <button class="key-btn key-submit" data-key="submit" type="button">ГОТОВО ✓</button>
+                    </div>
+
+                    <!-- Custom Virtual Numeric Keypad (4 Rows) -->
+                    <div id="p2-keypad" class="custom-keypad locked">
+                        <div class="keypad-row">
+                            <button class="key-btn" data-key="1" type="button">1</button>
+                            <button class="key-btn" data-key="2" type="button">2</button>
+                            <button class="key-btn" data-key="3" type="button">3</button>
+                        </div>
+                        <div class="keypad-row">
+                            <button class="key-btn" data-key="4" type="button">4</button>
+                            <button class="key-btn" data-key="5" type="button">5</button>
+                            <button class="key-btn" data-key="6" type="button">6</button>
+                        </div>
+                        <div class="keypad-row">
+                            <button class="key-btn" data-key="7" type="button">7</button>
+                            <button class="key-btn" data-key="8" type="button">8</button>
+                            <button class="key-btn" data-key="9" type="button">9</button>
+                        </div>
+                        <div class="keypad-row">
+                            <button class="key-btn key-neg" data-key="-" type="button">±</button>
+                            <button class="key-btn" data-key="0" type="button">0</button>
+                            <button class="key-btn key-back" data-key="backspace" type="button">⌫</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CENTRAL TV MATH CHALKBOARD -->
+                <div class="math-board-wrapper">
+                    <div id="math-board" class="tv-chalkboard">
+                        <div class="board-top-row">
+                            <span id="round-badge" class="round-badge">РАУНД 1 / 10</span>
+                            <span id="points-ticker" class="points-ticker">+50 ОЧКОВ</span>
+                        </div>
+                        
+                        <div id="math-formula" class="math-formula-container">
+                            <span class="unicode-math">√144 = ?</span>
+                        </div>
+
+                        <div id="board-feedback" class="board-feedback hidden"></div>
+                        <div id="board-hint" class="board-hint"></div>
+                    </div>
+                </div>
+
+                <!-- PLAYER 1 ZONE (BOTTOM) -->
+                <section id="player-1-zone" class="player-zone p1-theme">
+                    <div class="player-info-bar">
+                        <span id="p1-name-display" class="player-name-badge">ИГРОК 1</span>
+                        <span id="p1-status-msg" class="player-status-badge idle">ЖМИ КНОПКУ!</span>
+                        <span id="p1-score-val" class="player-score-badge">0</span>
+                    </div>
+
+                    <!-- Timer Bar for Answering Window -->
+                    <div class="answer-timer-track">
+                        <div id="p1-timer-bar" class="answer-timer-bar"></div>
+                    </div>
+
+                    <!-- Big Buzz Button -->
+                    <button id="p1-buzz-btn" class="btn-buzz" type="button">
+                        ⚡ ОТВЕТИТЬ (ЖМИ!)
+                    </button>
+
+                    <!-- Answer Input Display & Submit Action -->
+                    <div class="answer-box-wrap">
+                        <div id="p1-input-display" class="answer-input-display">?</div>
+                        <button class="key-btn key-submit" data-key="submit" type="button">ГОТОВО ✓</button>
+                    </div>
+
+                    <!-- Custom Virtual Numeric Keypad (4 Rows) -->
+                    <div id="p1-keypad" class="custom-keypad locked">
+                        <div class="keypad-row">
+                            <button class="key-btn" data-key="1" type="button">1</button>
+                            <button class="key-btn" data-key="2" type="button">2</button>
+                            <button class="key-btn" data-key="3" type="button">3</button>
+                        </div>
+                        <div class="keypad-row">
+                            <button class="key-btn" data-key="4" type="button">4</button>
+                            <button class="key-btn" data-key="5" type="button">5</button>
+                            <button class="key-btn" data-key="6" type="button">6</button>
+                        </div>
+                        <div class="keypad-row">
+                            <button class="key-btn" data-key="7" type="button">7</button>
+                            <button class="key-btn" data-key="8" type="button">8</button>
+                            <button class="key-btn" data-key="9" type="button">9</button>
+                        </div>
+                        <div class="keypad-row">
+                            <button class="key-btn key-neg" data-key="-" type="button">±</button>
+                            <button class="key-btn" data-key="0" type="button">0</button>
+                            <button class="key-btn" data-key="backspace" type="button">⌫</button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- SCREEN 4: GAME OVER -->
+        <div id="screen-game-over" class="screen">
+            <div class="game-over-card">
+                <div class="trophy-icon">🏆</div>
+                <div class="winner-banner">
+                    <h2 id="winner-text">ПОБЕДИТЕЛЬ: ИГРОК 1!</h2>
+                    <p id="winner-subtitle">С преимуществом в 25 очков</p>
+                </div>
+
+                <div class="stats-table-wrap">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Показатель</th>
+                                <th>Игрок 1</th>
+                                <th>Игрок 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Итоговые очки</td>
+                                <td id="stats-p1-score">0</td>
+                                <td id="stats-p2-score">0</td>
+                            </tr>
+                            <tr>
+                                <td>Верных ответов</td>
+                                <td id="stats-p1-correct">0</td>
+                                <td id="stats-p2-correct">0</td>
+                            </tr>
+                            <tr>
+                                <td>Ошибок</td>
+                                <td id="stats-p1-errors">0</td>
+                                <td id="stats-p2-errors">0</td>
+                            </tr>
+                            <tr>
+                                <td>Ср. время реакции</td>
+                                <td id="stats-p1-reaction">0.0с</td>
+                                <td id="stats-p2-reaction">0.0с</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="btn-rematch" class="btn-start" style="flex: 2; margin-top: 0;">РЕВАНШ ⚔️</button>
+                    <button id="btn-gameover-menu" class="btn-secondary">В МЕНЮ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK SETTINGS & HELP MODAL -->
+        <div id="modal-settings" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span class="modal-title">⚙️ НАСТРОЙКИ И ПРАВИЛА</span>
+                    <button id="btn-close-modal" class="modal-close">×</button>
+                </div>
+                <div style="font-size: 13px; line-height: 1.5; color: #cfd8dc; display: flex; flex-direction: column; gap: 10px;">
+                    <p><b>📖 Правила телевизионной дуэли:</b></p>
+                    <ul style="padding-left: 18px;">
+                        <li>На центральном табло появляется математическое выражение.</li>
+                        <li>Очки за раунд постепенно падают с <b>50</b> до <b>10</b> — чем быстрее ответ, тем больше очков!</li>
+                        <li>Нажми большую кнопку <b>ОТВЕТИТЬ</b>, чтобы перехватить право ответа.</li>
+                        <li>Введи число на сенсорной клавиатуре и подтверди ответ.</li>
+                        <li>За ошибку начисляется штраф (-5), а соперник получает шанс на реванш!</li>
+                    </ul>
+
+                    <p><b>📱 Игра на 1 телефоне:</b></p>
+                    <p>Положите телефон на стол между игроками. Кнопка <b>🔄</b> вверху разворачивает интерфейс Игрока 2 на 180°, чтобы каждый смотрел прямо перед собой!</p>
+
+                    <p><b>⌨️ Горячие клавиши (на ПК):</b></p>
+                    <ul style="padding-left: 18px;">
+                        <li><b>Игрок 1:</b> Клавиша <code>[A]</code> (жми кнопку), цифры <code>0-9</code>, <code>Enter</code></li>
+                        <li><b>Игрок 2:</b> Клавиша <code>[L]</code> (жми кнопку), Numpad <code>0-9</code>, Numpad <code>Enter</code></li>
+                        <li><b>1 Игрок:</b> <code>[Пробел]</code> (жми кнопку), цифры, <code>Enter</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/questions.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
