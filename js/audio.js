@@ -70,91 +70,107 @@ class SoundEngine {
     // Generic tone helper
     playTone(freq, duration, type = 'sine', gainVal = 0.3, delay = 0) {
         if (this.muted || document.hidden) return;
-        this.init();
-        if (!this.ctx || this.ctx.state !== 'running') return;
+        try {
+            this.init();
+            if (!this.ctx || this.ctx.state !== 'running') return;
 
-        const startTime = this.ctx.currentTime + delay;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+            const startTime = this.ctx.currentTime + delay;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
 
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, startTime);
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startTime);
 
-        gain.gain.setValueAtTime(gainVal * this.volume, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+            gain.gain.setValueAtTime(gainVal * this.volume, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
 
-        osc.start(startTime);
-        osc.stop(startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        } catch (e) {
+            console.warn('Audio playTone error:', e);
+        }
     }
 
     // UI Click sound (crisp tap)
     playClick() {
         if (this.muted || document.hidden) return;
-        this.init();
-        if (!this.ctx || this.ctx.state !== 'running') return;
+        try {
+            this.init();
+            if (!this.ctx || this.ctx.state !== 'running') return;
 
-        const startTime = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+            const startTime = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(600, startTime);
-        osc.frequency.exponentialRampToValueAtTime(200, startTime + 0.04);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, startTime);
+            osc.frequency.exponentialRampToValueAtTime(200, startTime + 0.04);
 
-        gain.gain.setValueAtTime(0.2 * this.volume, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.04);
+            gain.gain.setValueAtTime(0.2 * this.volume, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.04);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
 
-        osc.start(startTime);
-        osc.stop(startTime + 0.04);
+            osc.start(startTime);
+            osc.stop(startTime + 0.04);
+        } catch (e) {
+            console.warn('Audio playClick error:', e);
+        }
     }
 
     // Keypad number tap
     playKeyTap(num = 5) {
         if (this.muted || document.hidden) return;
-        const baseFreq = 440 + (num * 30);
-        this.playTone(baseFreq, 0.05, 'sine', 0.15);
+        try {
+            const baseFreq = 440 + (num * 30);
+            this.playTone(baseFreq, 0.05, 'sine', 0.15);
+        } catch (e) {
+            console.warn('Audio playKeyTap error:', e);
+        }
     }
 
     // Buzz-in sound (dramatic TV show buzz)
     playBuzzIn(player = 1) {
         if (this.muted || document.hidden) return;
-        this.init();
-        if (!this.ctx || this.ctx.state !== 'running') return;
+        try {
+            this.init();
+            if (!this.ctx || this.ctx.state !== 'running') return;
 
-        const startTime = this.ctx.currentTime;
-        const freq = player === 1 ? 520 : 680;
-        
-        // Two-tone punch
-        const osc1 = this.ctx.createOscillator();
-        const osc2 = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+            const startTime = this.ctx.currentTime;
+            const freq = player === 1 ? 520 : 680;
+            
+            // Two-tone punch
+            const osc1 = this.ctx.createOscillator();
+            const osc2 = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
 
-        osc1.type = 'sine';
-        osc2.type = 'triangle';
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
 
-        osc1.frequency.setValueAtTime(freq, startTime);
-        osc1.frequency.exponentialRampToValueAtTime(freq * 1.5, startTime + 0.12);
+            osc1.frequency.setValueAtTime(freq, startTime);
+            osc1.frequency.exponentialRampToValueAtTime(freq * 1.5, startTime + 0.12);
 
-        osc2.frequency.setValueAtTime(freq * 1.25, startTime);
-        osc2.frequency.exponentialRampToValueAtTime(freq * 1.8, startTime + 0.12);
+            osc2.frequency.setValueAtTime(freq * 1.25, startTime);
+            osc2.frequency.exponentialRampToValueAtTime(freq * 1.8, startTime + 0.12);
 
-        gain.gain.setValueAtTime(0.4 * this.volume, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+            gain.gain.setValueAtTime(0.4 * this.volume, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
 
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(this.ctx.destination);
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(this.ctx.destination);
 
-        osc1.start(startTime);
-        osc2.start(startTime);
-        osc1.stop(startTime + 0.22);
-        osc2.stop(startTime + 0.22);
+            osc1.start(startTime);
+            osc2.start(startTime);
+            osc1.stop(startTime + 0.22);
+            osc2.stop(startTime + 0.22);
+        } catch (e) {
+            console.warn('Audio playBuzzIn error:', e);
+        }
     }
 
     // Countdown beeps (3, 2, 1, GO)
@@ -189,32 +205,36 @@ class SoundEngine {
     // Wrong Answer - TV error buzzer
     playWrong() {
         if (this.muted || document.hidden) return;
-        this.init();
-        if (!this.ctx || this.ctx.state !== 'running') return;
+        try {
+            this.init();
+            if (!this.ctx || this.ctx.state !== 'running') return;
 
-        const startTime = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const osc2 = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+            const startTime = this.ctx.currentTime;
+            const duration = 0.35;
+            const osc = this.ctx.createOscillator();
+            const osc2 = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
 
-        osc.type = 'sawtooth';
-        osc2.type = 'sawtooth';
+            osc.type = 'sawtooth';
+            osc2.type = 'sawtooth';
 
-        osc.frequency.setValueAtTime(140, startTime);
-        osc2.frequency.setValueAtTime(147, startTime); // dissonant minor second
+            osc.frequency.setValueAtTime(140, startTime);
+            osc2.frequency.setValueAtTime(147, startTime); // dissonant minor second
 
-        gain.gain.setValueAtTime(0.35 * this.volume, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+            gain.gain.setValueAtTime(0.35 * this.volume, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
-        osc.connect(gain);
-        osc2.connect(gain);
-        gain.connect(this.ctx.destination);
+            osc.connect(gain);
+            osc2.connect(gain);
+            gain.connect(this.ctx.destination);
 
-        osc.start(startTime);
-        osc2.start(startTime);
-        osc1.stop ? null : null;
-        osc.stop(startTime + 0.35);
-        osc2.stop(startTime + 0.35);
+            osc.start(startTime);
+            osc2.start(startTime);
+            osc.stop(startTime + duration);
+            osc2.stop(startTime + duration);
+        } catch (e) {
+            console.warn('Audio playWrong error:', e);
+        }
     }
 
     // Time-out buzzer

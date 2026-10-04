@@ -58,7 +58,7 @@ class RootDuelGame {
         // UI references cache
         this.dom = {};
         // Version
-        this.version = '1.1.0';
+        this.version = '1.1.2';
     }
 
     init() {
@@ -801,7 +801,11 @@ class RootDuelGame {
         if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
         if (this.ai) this.ai.cancel();
 
-        this.audio.playCorrect();
+        try {
+            this.audio.playCorrect();
+        } catch (e) {
+            console.warn('Audio error:', e);
+        }
 
         const earned = this.roundPoints;
         this.players[playerId].score += earned;
@@ -841,7 +845,11 @@ class RootDuelGame {
         if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
         if (this.ai) this.ai.cancel();
 
-        this.audio.playWrong();
+        try {
+            this.audio.playWrong();
+        } catch (e) {
+            console.warn('Audio error:', e);
+        }
         this.players[playerId].wrongCount++;
 
         // Penalty (-5 points)
