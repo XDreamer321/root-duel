@@ -57,9 +57,12 @@ class RootDuelGame {
 
         // UI references cache
         this.dom = {};
+        // Version
+        this.version = '1.1.0';
     }
 
     init() {
+        console.log(`[ROOT DUEL] Initialized version ${this.version}`);
         this.cacheDom();
         this.bindEvents();
         this.applySettingsToUI();
@@ -342,21 +345,31 @@ class RootDuelGame {
     }
 
     setupBuzzButton(btn, playerId) {
+        let lastBuzz = 0;
         const handler = (e) => {
-            e.preventDefault();
+            const now = Date.now();
+            if (now - lastBuzz < 350) return;
+            lastBuzz = now;
+            if (e.cancelable) e.preventDefault();
             if (playerId === 2 && this.mode === '1p') return; // AI controls P2 in 1P mode
             this.onPlayerBuzz(playerId);
         };
 
         btn.addEventListener('pointerdown', handler);
+        btn.addEventListener('touchstart', handler, { passive: false });
+        btn.addEventListener('click', handler);
     }
 
     setupKeypad(playerId, keypadEl) {
         if (!keypadEl) return;
 
         keypadEl.querySelectorAll('[data-key]').forEach(btn => {
-            btn.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
+            let lastTap = 0;
+            const handler = (e) => {
+                const now = Date.now();
+                if (now - lastTap < 100) return;
+                lastTap = now;
+                if (e.cancelable) e.preventDefault();
                 if (playerId === 2 && this.mode === '1p') return; // Ignore user touch for AI
                 if (this.state !== 'ANSWERING' || this.activePlayer !== playerId) return;
 
@@ -368,7 +381,11 @@ class RootDuelGame {
                 } else {
                     this.appendPlayerInput(playerId, key);
                 }
-            });
+            };
+
+            btn.addEventListener('pointerdown', handler);
+            btn.addEventListener('touchstart', handler, { passive: false });
+            btn.addEventListener('click', handler);
         });
     }
 
@@ -500,7 +517,8 @@ class RootDuelGame {
         for (let i = 1; i <= 2; i++) {
             this.updatePlayerInput(i, '');
             this.setPlayerKeypadActive(i, false);
-            this.setPlayerStatus(i, 'ЖМИ КНОПКУ!', 'idle');
+            const statusMsg = (i === 2 && this.mode === '1p') ? 'БОТ ДУМАЕТ...' : 'ЖМИ КНОПКУ!';
+            this.setPlayerStatus(i, statusMsg, 'idle');
         }
 
         // Enable buzz buttons
@@ -777,6 +795,7 @@ class RootDuelGame {
 
     handleCorrectAnswer(playerId) {
         this.state = 'REVEAL';
+        this.activePlayer = null;
         if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
         this.stopAnswerCountdown();
         if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
@@ -811,11 +830,12 @@ class RootDuelGame {
             if (this.state === 'REVEAL') {
                 this.nextRound();
             }
-        }, 2200);
+        }, 1800);
     }
 
     handleWrongAnswer(playerId, isTimeout) {
         this.state = 'REVEAL';
+        this.activePlayer = null;
         if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
         this.stopAnswerCountdown();
         if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
@@ -851,7 +871,7 @@ class RootDuelGame {
             if (this.state === 'REVEAL') {
                 this.nextRound();
             }
-        }, 2200);
+        }, 1800);
     }
 
     onRoundTimeout() {
@@ -861,6 +881,7 @@ class RootDuelGame {
 
     revealAnswerAfterFailure() {
         this.state = 'REVEAL';
+        this.activePlayer = null;
         if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
         this.stopAnswerCountdown();
         if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
@@ -884,7 +905,7 @@ class RootDuelGame {
             if (this.state === 'REVEAL') {
                 this.nextRound();
             }
-        }, 2200);
+        }, 1800);
     }
 
     /* -------------------------------------------------------------
