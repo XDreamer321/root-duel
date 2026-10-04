@@ -18,7 +18,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
     <!-- Game Stylesheet -->
-    <link rel="stylesheet" href="css/style.css?v=1.2.0">
+    <link rel="stylesheet" href="css/style.css?v=1.3.0">
 </head>
 <body>
     <div id="app">
@@ -27,10 +27,11 @@
             <div class="logo-wrap">
                 <span class="logo-badge">TV</span>
                 <span class="logo-title">ROOT DUEL</span>
-                <span class="version-badge">v1.2.0</span>
+                <span class="version-badge">v1.3.0</span>
             </div>
             <div class="header-actions">
                 <button id="btn-rotate-p2" class="icon-btn active" title="Перевернуть экран Игрока 2 на 180° для дуэли лицом к лицу">🔄</button>
+                <button id="btn-pause" class="icon-btn" title="Пауза (P / Esc)">⏸️</button>
                 <button id="btn-mute" class="icon-btn" title="Звук">🔊</button>
                 <button id="btn-fullscreen" class="icon-btn" title="На весь экран">⛶</button>
                 <button id="btn-open-settings" class="icon-btn" title="Настройки и подсказки">⚙️</button>
@@ -82,11 +83,12 @@
                 <!-- Rounds Selection -->
                 <div class="config-group">
                     <div class="config-label">Количество вопросов</div>
-                    <div class="button-grid grid-4">
+                    <div class="button-grid grid-5">
                         <button class="choice-btn" data-setting="rounds" data-val="5">5</button>
                         <button class="choice-btn selected" data-setting="rounds" data-val="10">10</button>
                         <button class="choice-btn" data-setting="rounds" data-val="15">15</button>
                         <button class="choice-btn" data-setting="rounds" data-val="20">20</button>
+                        <button class="choice-btn" data-setting="rounds" data-val="infinite" title="Бесконечный режим (марафон)">∞ МАКС</button>
                     </div>
                 </div>
 
@@ -96,12 +98,12 @@
                 <!-- Site Version Footer -->
                 <div class="site-version-footer">
                     <span>ROOT DUEL</span>
-                    <span class="version-tag">v1.2.0</span>
+                    <span class="version-tag">v1.3.0</span>
                     <span>• GitHub Pages</span>
                 </div>
             </div>
             <div class="menu-bottom-indicator">
-                Версия сайта: <strong>v1.2.0</strong>
+                Версия сайта: <strong>v1.3.0</strong>
             </div>
         </main>
 
@@ -120,6 +122,7 @@
                 <section id="player-2-zone" class="player-zone p2-theme rotated-180">
                     <div class="player-info-bar">
                         <span id="p2-name-display" class="player-name-badge">ИГРОК 2</span>
+                        <span id="p2-combo-badge" class="combo-badge hidden">🔥 x2</span>
                         <span id="p2-status-msg" class="player-status-badge idle">ЖМИ КНОПКУ!</span>
                         <span id="p2-score-val" class="player-score-badge">0</span>
                     </div>
@@ -157,7 +160,8 @@
                             <button class="key-btn" data-key="8" type="button">8</button>
                             <button class="key-btn" data-key="9" type="button">9</button>
                         </div>
-                        <div class="keypad-row">
+                        <div class="keypad-row keypad-row-4">
+                            <button class="key-btn key-clear" data-key="clear" type="button" title="Очистить всё">C</button>
                             <button class="key-btn key-neg" data-key="-" type="button">±</button>
                             <button class="key-btn" data-key="0" type="button">0</button>
                             <button class="key-btn key-back" data-key="backspace" type="button">⌫</button>
@@ -176,7 +180,10 @@
 
                         <!-- CENTER HUD STRIP: Round & Points Ticker -->
                         <div class="board-center-strip">
-                            <span id="round-badge" class="round-badge">РАУНД 1 / 10</span>
+                            <div class="strip-left">
+                                <span id="round-badge" class="round-badge">РАУНД 1 / 10</span>
+                                <span id="series-badge" class="series-badge" title="Счёт серии матчей">СЕРИЯ [ 0 : 0 ]</span>
+                            </div>
                             <span id="points-ticker" class="points-ticker">+50 ОЧКОВ</span>
                         </div>
                         
@@ -196,6 +203,7 @@
                 <section id="player-1-zone" class="player-zone p1-theme">
                     <div class="player-info-bar">
                         <span id="p1-name-display" class="player-name-badge">ИГРОК 1</span>
+                        <span id="p1-combo-badge" class="combo-badge hidden">🔥 x2</span>
                         <span id="p1-status-msg" class="player-status-badge idle">ЖМИ КНОПКУ!</span>
                         <span id="p1-score-val" class="player-score-badge">0</span>
                     </div>
@@ -233,7 +241,8 @@
                             <button class="key-btn" data-key="8" type="button">8</button>
                             <button class="key-btn" data-key="9" type="button">9</button>
                         </div>
-                        <div class="keypad-row">
+                        <div class="keypad-row keypad-row-4">
+                            <button class="key-btn key-clear" data-key="clear" type="button" title="Очистить всё">C</button>
                             <button class="key-btn key-neg" data-key="-" type="button">±</button>
                             <button class="key-btn" data-key="0" type="button">0</button>
                             <button class="key-btn" data-key="backspace" type="button">⌫</button>
@@ -253,6 +262,8 @@
                     <p id="winner-subtitle">С преимуществом в 25 очков</p>
                 </div>
 
+                <div id="stats-series-banner" class="series-score-banner">Счёт серии матчей: 0 — 0</div>
+
                 <div class="stats-table-wrap">
                     <table class="stats-table">
                         <thead>
@@ -267,6 +278,11 @@
                                 <td>Итоговые очки</td>
                                 <td id="stats-p1-score">0</td>
                                 <td id="stats-p2-score">0</td>
+                            </tr>
+                            <tr>
+                                <td>🔥 Лучшее комбо</td>
+                                <td id="stats-p1-streak">0</td>
+                                <td id="stats-p2-streak">0</td>
                             </tr>
                             <tr>
                                 <td>Верных ответов</td>
@@ -291,6 +307,26 @@
                     <button id="btn-rematch" class="btn-start" style="flex: 2; margin-top: 0;">РЕВАНШ ⚔️</button>
                     <button id="btn-gameover-menu" class="btn-secondary">В МЕНЮ</button>
                 </div>
+                <button id="btn-reset-series" class="btn-link" type="button">Сбросить счёт серии ↺</button>
+            </div>
+        </div>
+
+        <!-- PAUSE MODAL -->
+        <div id="modal-pause" class="modal-overlay">
+            <div class="modal-content pause-modal-content">
+                <div class="modal-header">
+                    <span class="modal-title">⏸️ ИГРА НА ПАУЗЕ</span>
+                </div>
+                <div class="pause-stats-box">
+                    <div id="pause-round-text" class="pause-round-text">РАУНД 1 / 10</div>
+                    <div id="pause-score-text" class="pause-score-text">Игрок 1: 0 | Игрок 2: 0</div>
+                    <div id="pause-series-text" class="pause-series-text">Счёт серии матчей: 0 — 0</div>
+                </div>
+                <div class="pause-actions">
+                    <button id="btn-resume-game" class="btn-start" style="margin-top: 0; width: 100%;">▶️ ПРОДОЛЖИТЬ</button>
+                    <button id="btn-finish-early" class="btn-secondary" style="width: 100%;">🏁 ЗАВЕРШИТЬ МАТЧ</button>
+                    <button id="btn-pause-menu" class="btn-secondary" style="width: 100%;">🏠 В ГЛАВНОЕ МЕНЮ</button>
+                </div>
             </div>
         </div>
 
@@ -302,13 +338,23 @@
                     <button id="btn-close-modal" class="modal-close">×</button>
                 </div>
                 <div style="font-size: 13px; line-height: 1.5; color: #cfd8dc; display: flex; flex-direction: column; gap: 10px;">
+                    <div class="setting-toggle-box">
+                        <label class="toggle-label" for="chk-haptic">
+                            <span>📳 Тактильный виброотклик</span>
+                            <input type="checkbox" id="chk-haptic" checked>
+                        </label>
+                    </div>
+
                     <p><b>📖 Правила телевизионной дуэли:</b></p>
                     <ul style="padding-left: 18px;">
                         <li>На центральном табло появляется математическое выражение.</li>
                         <li>Очки за раунд постепенно падают с <b>50</b> до <b>10</b> — чем быстрее ответ, тем больше очков!</li>
+                        <li>В последние 3 секунды включается тревожный пульс таймера!</li>
                         <li>Нажми большую кнопку <b>ОТВЕТИТЬ</b>, чтобы перехватить право ответа.</li>
                         <li>Введи число на сенсорной клавиатуре и подтверди ответ.</li>
-                        <li>За ошибку начисляется штраф (-5), а соперник получает шанс на реванш!</li>
+                        <li>Серия верных ответов активирует <b>🔥 КОМБО</b> с бонусными очками!</li>
+                        <li>Кнопка <b>C</b> мгновенно стирает введённое число.</li>
+                        <li>За ошибку начисляется штраф (-5), а серия комбо сбрасывается.</li>
                     </ul>
 
                     <p><b>📱 Игра на 1 телефоне:</b></p>
@@ -318,7 +364,8 @@
                     <ul style="padding-left: 18px;">
                         <li><b>Игрок 1:</b> Клавиша <code>[A]</code> (жми кнопку), цифры <code>0-9</code>, <code>Enter</code></li>
                         <li><b>Игрок 2:</b> Клавиша <code>[L]</code> (жми кнопку), Numpad <code>0-9</code>, Numpad <code>Enter</code></li>
-                        <li><b>1 Игрок:</b> <code>[Пробел]</code> (жми кнопку), цифры, <code>Enter</code></li>
+                        <li><b>Быстрая очистка:</b> <code>[C]</code> или <code>[Delete]</code></li>
+                        <li><b>Пауза:</b> <code>[P]</code> или <code>[Esc]</code></li>
                     </ul>
                 </div>
             </div>
@@ -326,9 +373,9 @@
     </div>
 
     <!-- Game Scripts -->
-    <script src="js/audio.js?v=1.2.0"></script>
-    <script src="js/questions.js?v=1.2.0"></script>
-    <script src="js/ai.js?v=1.2.0"></script>
-    <script src="js/game.js?v=1.2.0"></script>
+    <script src="js/audio.js?v=1.3.0"></script>
+    <script src="js/questions.js?v=1.3.0"></script>
+    <script src="js/ai.js?v=1.3.0"></script>
+    <script src="js/game.js?v=1.3.0"></script>
 </body>
 </html>

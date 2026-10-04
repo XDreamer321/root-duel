@@ -192,6 +192,22 @@ class SoundEngine {
         this.playTone(900, 0.03, 'sine', 0.05);
     }
 
+    // Tension tick in last 3 seconds (increasingly urgent studio alarm)
+    playTensionTick(urgency = 1) {
+        if (this.muted || document.hidden) return;
+        const freq = 1100 + (urgency * 180);
+        this.playTone(freq, 0.04, 'triangle', 0.12);
+        this.playTone(freq * 1.5, 0.03, 'sine', 0.08, 0.01);
+    }
+
+    // Fire Combo chime (celebratory rising double-beep)
+    playCombo(streak = 2) {
+        if (this.muted || document.hidden) return;
+        const baseFreq = Math.min(1200, 650 + (streak * 90));
+        this.playTone(baseFreq, 0.09, 'triangle', 0.22, 0.0);
+        this.playTone(baseFreq * 1.5, 0.18, 'sine', 0.18, 0.06);
+    }
+
     // Correct Answer - joyful TV arpeggio
     playCorrect() {
         if (this.muted || document.hidden) return;

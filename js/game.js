@@ -24,6 +24,13 @@ class RootDuelGame {
         this.answerTimer = null;
         this.roundStartTime = 0;
         this.reboundAvailable = true;
+        this.isPaused = false;
+        this.pausedState = null;
+
+        // QoL Features: Haptic, Series Tracker, High Score
+        this.hapticEnabled = true;
+        this.seriesScore = { 1: 0, 2: 0 };
+        this.highScore = 0;
 
         // Players State
         this.players = {
@@ -34,7 +41,9 @@ class RootDuelGame {
                 input: '',
                 correctCount: 0,
                 wrongCount: 0,
-                buzzTimes: []
+                buzzTimes: [],
+                streak: 0,
+                maxStreak: 0
             },
             2: {
                 id: 2,
@@ -43,7 +52,9 @@ class RootDuelGame {
                 input: '',
                 correctCount: 0,
                 wrongCount: 0,
-                buzzTimes: []
+                buzzTimes: [],
+                streak: 0,
+                maxStreak: 0
             }
         };
 
@@ -58,7 +69,7 @@ class RootDuelGame {
         // UI references cache
         this.dom = {};
         // Version
-        this.version = '1.2.0';
+        this.version = '1.3.0';
     }
 
     init() {
@@ -76,13 +87,23 @@ class RootDuelGame {
         this.dom.screenCountdown = document.getElementById('screen-countdown');
         this.dom.screenGameOver = document.getElementById('screen-game-over');
         this.dom.modalSettings = document.getElementById('modal-settings');
+        this.dom.modalPause = document.getElementById('modal-pause');
 
         // Header controls
         this.dom.btnMute = document.getElementById('btn-mute');
         this.dom.btnFullscreen = document.getElementById('btn-fullscreen');
         this.dom.btnRotateP2 = document.getElementById('btn-rotate-p2');
+        this.dom.btnPause = document.getElementById('btn-pause');
         this.dom.btnSettings = document.getElementById('btn-open-settings');
         this.dom.btnBackMenu = document.getElementById('btn-back-menu');
+
+        // Pause Modal elements
+        this.dom.btnResumeGame = document.getElementById('btn-resume-game');
+        this.dom.btnFinishEarly = document.getElementById('btn-finish-early');
+        this.dom.btnPauseMenu = document.getElementById('btn-pause-menu');
+        this.dom.pauseRoundText = document.getElementById('pause-round-text');
+        this.dom.pauseScoreText = document.getElementById('pause-score-text');
+        this.dom.pauseSeriesText = document.getElementById('pause-series-text');
 
         // Duel Arena elements
         this.dom.arena = document.getElementById('duel-arena');
@@ -102,6 +123,8 @@ class RootDuelGame {
         this.dom.p2Status = document.getElementById('p2-status-msg');
         this.dom.p1TimerBar = document.getElementById('p1-timer-bar');
         this.dom.p2TimerBar = document.getElementById('p2-timer-bar');
+        this.dom.p1ComboBadge = document.getElementById('p1-combo-badge');
+        this.dom.p2ComboBadge = document.getElementById('p2-combo-badge');
 
         // Central TV Board (Dual View Support)
         this.dom.mathBoard = document.getElementById('math-board');
@@ -109,6 +132,7 @@ class RootDuelGame {
         this.dom.mathFormulaP2 = document.getElementById('math-formula-p2');
         this.dom.mathFormula = this.dom.mathFormulaP1 || document.getElementById('math-formula');
         this.dom.roundBadge = document.getElementById('round-badge');
+        this.dom.seriesBadge = document.getElementById('series-badge');
         this.dom.pointsTicker = document.getElementById('points-ticker');
         this.dom.boardFeedbackP1 = document.getElementById('board-feedback-p1');
         this.dom.boardFeedbackP2 = document.getElementById('board-feedback-p2');
@@ -121,14 +145,21 @@ class RootDuelGame {
         // Game Over elements
         this.dom.winnerText = document.getElementById('winner-text');
         this.dom.winnerSubtitle = document.getElementById('winner-subtitle');
+        this.dom.statsSeriesBanner = document.getElementById('stats-series-banner');
+        this.dom.btnResetSeries = document.getElementById('btn-reset-series');
         this.dom.p1FinalScore = document.getElementById('stats-p1-score');
         this.dom.p2FinalScore = document.getElementById('stats-p2-score');
+        this.dom.p1FinalStreak = document.getElementById('stats-p1-streak');
+        this.dom.p2FinalStreak = document.getElementById('stats-p2-streak');
         this.dom.p1FinalCorrect = document.getElementById('stats-p1-correct');
         this.dom.p2FinalCorrect = document.getElementById('stats-p2-correct');
         this.dom.p1FinalErrors = document.getElementById('stats-p1-errors');
         this.dom.p2FinalErrors = document.getElementById('stats-p2-errors');
         this.dom.p1FinalReaction = document.getElementById('stats-p1-reaction');
         this.dom.p2FinalReaction = document.getElementById('stats-p2-reaction');
+
+        // Settings toggle
+        this.dom.chkHaptic = document.getElementById('chk-haptic');
     }
 
     loadSettings() {
@@ -139,9 +170,14 @@ class RootDuelGame {
                 if (s.mode) this.mode = s.mode;
                 if (s.category) this.category = s.category;
                 if (s.difficulty) this.difficulty = s.difficulty;
-                if (s.totalRounds) this.totalRounds = parseInt(s.totalRounds, 10);
+                if (s.totalRounds) this.totalRounds = s.totalRounds === 'infinite' ? 'infinite' : parseInt(s.totalRounds, 10);
                 if (s.player2Rotated !== undefined) this.player2Rotated = s.player2Rotated;
             }
+            const ser = localStorage.getItem('root_duel_series');
+            if (ser) this.seriesScore = JSON.parse(ser);
+            const hap = localStorage.getItem('root_duel_haptic');
+            if (hap !== null) this.hapticEnabled = hap !== 'false';
+            this.highScore = parseInt(localStorage.getItem('root_duel_high_score') || '0', 10);
         } catch (e) {
             console.warn('Failed to load settings:', e);
         }
@@ -156,6 +192,8 @@ class RootDuelGame {
             player2Rotated: this.player2Rotated
         };
         localStorage.setItem('root_duel_settings', JSON.stringify(s));
+        localStorage.setItem('root_duel_haptic', this.hapticEnabled ? 'true' : 'false');
+        localStorage.setItem('root_duel_series', JSON.stringify(this.seriesScore));
     }
 
     applySettingsToUI() {
@@ -173,6 +211,14 @@ class RootDuelGame {
         // Audio mute icon
         this.updateAudioIcon();
 
+        // Haptic checkbox
+        if (this.dom.chkHaptic) {
+            this.dom.chkHaptic.checked = this.hapticEnabled;
+        }
+
+        // Series score badges
+        this.updateSeriesUI();
+
         // Update menu selections
         this.updateMenuOptionHighlight('mode', this.mode);
         this.updateMenuOptionHighlight('category', this.category);
@@ -185,6 +231,49 @@ class RootDuelGame {
 
         // Update dual orientation chalkboard view
         this.updateBoardDualView();
+    }
+
+    triggerHaptic(type) {
+        if (!this.hapticEnabled || !navigator.vibrate) return;
+        try {
+            switch (type) {
+                case 'tap': navigator.vibrate(15); break;
+                case 'buzz': navigator.vibrate(45); break;
+                case 'clear': navigator.vibrate([20, 20]); break;
+                case 'correct': navigator.vibrate([35, 40, 55]); break;
+                case 'wrong': navigator.vibrate([110, 50, 110]); break;
+                case 'combo': navigator.vibrate([30, 30, 30, 30, 60]); break;
+            }
+        } catch (e) {}
+    }
+
+    updateSeriesUI() {
+        if (this.dom.seriesBadge) {
+            this.dom.seriesBadge.textContent = `СЕРИЯ [ ${this.seriesScore[1]} : ${this.seriesScore[2]} ]`;
+        }
+        if (this.dom.statsSeriesBanner) {
+            const p2Title = this.mode === '1p' ? 'ИИ' : 'Игрок 2';
+            this.dom.statsSeriesBanner.textContent = `Счёт серии матчей: Игрок 1 [ ${this.seriesScore[1]} : ${this.seriesScore[2]} ] ${p2Title}`;
+        }
+    }
+
+    resetSeriesScore() {
+        this.seriesScore = { 1: 0, 2: 0 };
+        localStorage.setItem('root_duel_series', JSON.stringify(this.seriesScore));
+        this.updateSeriesUI();
+        this.audio.playClick();
+        this.triggerHaptic('tap');
+    }
+
+    updateComboBadge(playerId, streak) {
+        const badge = playerId === 1 ? this.dom.p1ComboBadge : this.dom.p2ComboBadge;
+        if (!badge) return;
+        if (streak >= 2) {
+            badge.textContent = `🔥 x${streak}`;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
     }
 
     updateBoardDualView() {
@@ -250,7 +339,7 @@ class RootDuelGame {
                         this.players[2].name = `ИИ (${this.difficulty.toUpperCase()})`;
                     }
                 } else if (setting === 'rounds') {
-                    this.totalRounds = parseInt(val, 10);
+                    this.totalRounds = val === 'infinite' ? 'infinite' : parseInt(val, 10);
                 }
 
                 this.saveSettings();
@@ -261,19 +350,63 @@ class RootDuelGame {
         // Start Match Button
         document.getElementById('btn-start-game').addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.startNewMatch();
         });
+
+        // Pause Button & Modal Actions
+        if (this.dom.btnPause) {
+            this.dom.btnPause.addEventListener('click', () => {
+                this.togglePause();
+            });
+        }
+        if (this.dom.btnResumeGame) {
+            this.dom.btnResumeGame.addEventListener('click', () => {
+                this.resumeGame();
+            });
+        }
+        if (this.dom.btnFinishEarly) {
+            this.dom.btnFinishEarly.addEventListener('click', () => {
+                this.finishMatchEarly();
+            });
+        }
+        if (this.dom.btnPauseMenu) {
+            this.dom.btnPauseMenu.addEventListener('click', () => {
+                if (this.dom.modalPause) this.dom.modalPause.classList.remove('active');
+                this.isPaused = false;
+                this.audio.playClick();
+                this.endMatchEarly();
+            });
+        }
+
+        // Reset Series Score Button
+        if (this.dom.btnResetSeries) {
+            this.dom.btnResetSeries.addEventListener('click', () => {
+                this.resetSeriesScore();
+            });
+        }
+
+        // Haptic Feedback Toggle in Settings
+        if (this.dom.chkHaptic) {
+            this.dom.chkHaptic.addEventListener('change', (e) => {
+                this.hapticEnabled = e.target.checked;
+                this.saveSettings();
+                if (this.hapticEnabled) this.triggerHaptic('tap');
+            });
+        }
 
         // Sound Mute Toggle
         this.dom.btnMute.addEventListener('click', () => {
             this.audio.toggleMute();
             this.updateAudioIcon();
             this.audio.playClick();
+            this.triggerHaptic('tap');
         });
 
         // Fullscreen Toggle
         this.dom.btnFullscreen.addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.toggleFullscreen();
         });
 
@@ -281,6 +414,7 @@ class RootDuelGame {
         this.dom.btnRotateP2.addEventListener('click', () => {
             this.player2Rotated = !this.player2Rotated;
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.saveSettings();
             this.applySettingsToUI();
         });
@@ -288,6 +422,7 @@ class RootDuelGame {
         // Back to Menu button during game
         this.dom.btnBackMenu.addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             if (confirm('Вы уверены, что хотите завершить текущую дуэль и выйти в меню?')) {
                 this.endMatchEarly();
             }
@@ -296,22 +431,26 @@ class RootDuelGame {
         // Rematch & Return buttons on Game Over
         document.getElementById('btn-rematch').addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.startNewMatch();
         });
 
         document.getElementById('btn-gameover-menu').addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.renderState('MENU');
         });
 
         // Quick Settings Modal
         this.dom.btnSettings.addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.dom.modalSettings.classList.toggle('active');
         });
 
         document.getElementById('btn-close-modal').addEventListener('click', () => {
             this.audio.playClick();
+            this.triggerHaptic('tap');
             this.dom.modalSettings.classList.remove('active');
         });
 
@@ -341,6 +480,68 @@ class RootDuelGame {
         window.addEventListener('focus', () => {
             if (!document.hidden) this.onAppResume();
         });
+    }
+
+    togglePause() {
+        if (this.isPaused) {
+            this.resumeGame();
+        } else if (this.state === 'PLAYING' || this.state === 'ANSWERING') {
+            this.pauseGame();
+        }
+    }
+
+    pauseGame() {
+        if (this.state !== 'PLAYING' && this.state !== 'ANSWERING') return;
+        this.isPaused = true;
+        this.pausedState = this.state;
+
+        if (this.roundScoreTimer) {
+            clearInterval(this.roundScoreTimer);
+            this.roundScoreTimer = null;
+        }
+        if (this.answerTimer) {
+            clearInterval(this.answerTimer);
+            this.answerTimer = null;
+        }
+        if (this.ai) this.ai.cancel();
+        if (this.audio) this.audio.suspend();
+
+        const roundText = this.totalRounds === 'infinite' ? `РАУНД ${this.currentRound} (∞)` : `РАУНД ${this.currentRound} / ${this.totalRounds}`;
+        if (this.dom.pauseRoundText) this.dom.pauseRoundText.textContent = roundText;
+        if (this.dom.pauseScoreText) this.dom.pauseScoreText.textContent = `${this.players[1].name}: ${this.players[1].score} | ${this.players[2].name}: ${this.players[2].score}`;
+        if (this.dom.pauseSeriesText) this.dom.pauseSeriesText.textContent = `Счёт серии матчей: ${this.seriesScore[1]} — ${this.seriesScore[2]}`;
+
+        if (this.dom.modalPause) this.dom.modalPause.classList.add('active');
+        this.audio.playClick();
+        this.triggerHaptic('tap');
+    }
+
+    resumeGame() {
+        if (!this.isPaused) return;
+        this.isPaused = false;
+        if (this.dom.modalPause) this.dom.modalPause.classList.remove('active');
+
+        if (this.audio) this.audio.resume();
+        this.audio.playClick();
+        this.triggerHaptic('tap');
+
+        if (this.pausedState === 'PLAYING') {
+            this.startPointsDecay();
+            if (this.mode === '1p' && this.currentQuestion) {
+                this.ai.onRoundStart(this.currentQuestion);
+            }
+        } else if (this.pausedState === 'ANSWERING' && this.activePlayer) {
+            this.startAnswerCountdown(this.activePlayer, 5);
+        }
+    }
+
+    finishMatchEarly() {
+        if (this.dom.modalPause) this.dom.modalPause.classList.remove('active');
+        this.isPaused = false;
+        if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
+        this.stopAnswerCountdown();
+        if (this.ai) this.ai.cancel();
+        this.finishMatch();
     }
 
     onAppPause() {
@@ -387,6 +588,7 @@ class RootDuelGame {
             lastBuzz = now;
             if (e.cancelable) e.preventDefault();
             if (playerId === 2 && this.mode === '1p') return; // AI controls P2 in 1P mode
+            this.triggerHaptic('buzz');
             this.onPlayerBuzz(playerId);
         };
 
@@ -410,10 +612,15 @@ class RootDuelGame {
 
                 const key = btn.dataset.key;
                 if (key === 'submit') {
+                    this.triggerHaptic('tap');
                     this.submitPlayerAnswer(playerId);
                 } else if (key === 'backspace') {
+                    this.triggerHaptic('tap');
                     this.backspacePlayerInput(playerId);
+                } else if (key === 'clear') {
+                    this.clearPlayerInput(playerId);
                 } else {
+                    this.triggerHaptic('tap');
                     this.appendPlayerInput(playerId, key);
                 }
             };
@@ -424,14 +631,29 @@ class RootDuelGame {
         });
     }
 
+    clearPlayerInput(playerId) {
+        if (this.state !== 'ANSWERING' || this.activePlayer !== playerId) return;
+        this.updatePlayerInput(playerId, '');
+        this.audio.playClick();
+        this.triggerHaptic('clear');
+    }
+
     handleKeyboardInput(e) {
         // Don't intercept if inside a regular text input or menu
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // Pause toggle hotkey
+        if (e.code === 'KeyP' || e.code === 'Escape') {
+            e.preventDefault();
+            this.togglePause();
+            return;
+        }
 
         // Spacebar to buzz in 1P mode
         if (e.code === 'Space') {
             e.preventDefault();
             if (this.state === 'PLAYING') {
+                this.triggerHaptic('buzz');
                 this.onPlayerBuzz(1);
                 return;
             }
@@ -440,6 +662,7 @@ class RootDuelGame {
         // Player 1 Keyboard: 'A' to buzz in
         if (e.code === 'KeyA') {
             if (this.state === 'PLAYING') {
+                this.triggerHaptic('buzz');
                 this.onPlayerBuzz(1);
                 return;
             }
@@ -448,6 +671,7 @@ class RootDuelGame {
         // Player 2 Keyboard: 'L' or 'Enter' to buzz in (only in 2P mode)
         if (e.code === 'KeyL' && this.mode === '2p') {
             if (this.state === 'PLAYING') {
+                this.triggerHaptic('buzz');
                 this.onPlayerBuzz(2);
                 return;
             }
@@ -460,14 +684,24 @@ class RootDuelGame {
             // Prevent typing for AI
             if (p === 2 && this.mode === '1p') return;
 
+            // Clear input hotkeys
+            if (e.code === 'KeyC' || e.code === 'Delete') {
+                e.preventDefault();
+                this.clearPlayerInput(p);
+                return;
+            }
+
             if (e.key >= '0' && e.key <= '9') {
                 e.preventDefault();
+                this.triggerHaptic('tap');
                 this.appendPlayerInput(p, e.key);
             } else if (e.key === '-' || e.key === 'Minus') {
                 e.preventDefault();
+                this.triggerHaptic('tap');
                 this.appendPlayerInput(p, '-');
             } else if (e.key === 'Backspace') {
                 e.preventDefault();
+                this.triggerHaptic('tap');
                 this.backspacePlayerInput(p);
             } else if (e.key === 'Enter') {
                 e.preventDefault();
@@ -498,6 +732,9 @@ class RootDuelGame {
             this.players[i].correctCount = 0;
             this.players[i].wrongCount = 0;
             this.players[i].buzzTimes = [];
+            this.players[i].streak = 0;
+            this.players[i].maxStreak = 0;
+            this.updateComboBadge(i, 0);
         }
 
         this.currentRound = 0;
@@ -505,6 +742,7 @@ class RootDuelGame {
         this.ai.setDifficulty(this.difficulty);
 
         this.updateScoresUI();
+        this.updateSeriesUI();
         this.renderState('COUNTDOWN');
         this.startMatchCountdown();
     }
@@ -538,7 +776,7 @@ class RootDuelGame {
 
     nextRound() {
         this.currentRound++;
-        if (this.currentRound > this.totalRounds) {
+        if (this.totalRounds !== 'infinite' && this.currentRound > this.totalRounds) {
             this.finishMatch();
             return;
         }
@@ -566,13 +804,15 @@ class RootDuelGame {
         this.currentQuestion = this.questionMgr.generateQuestion(this.category, this.difficulty);
         this.renderQuestion(this.currentQuestion);
 
-        // Update Round Badge
-        this.dom.roundBadge.textContent = `РАУНД ${this.currentRound} / ${this.totalRounds}`;
+        // Update Round Badge (handles endless mode)
+        const roundStr = this.totalRounds === 'infinite' ? `РАУНД ${this.currentRound} (∞)` : `РАУНД ${this.currentRound} / ${this.totalRounds}`;
+        this.dom.roundBadge.textContent = roundStr;
 
         // Reset Points Ticker (Starts at 50, drops down to 10)
         this.roundPoints = 50;
         this.dom.pointsTicker.textContent = `+${this.roundPoints} ОЧКОВ`;
         this.dom.pointsTicker.className = 'points-ticker active';
+        this.dom.pointsTicker.classList.remove('tension-pulse');
 
         // Clear feedback banner
         this.setBoardFeedback('', 'hidden');
@@ -580,6 +820,7 @@ class RootDuelGame {
 
         // Start decaying points timer & timestamp
         this.roundStartTime = performance.now();
+        this.lastTensionTickSec = -1;
         this.startPointsDecay();
 
         // Notify AI
@@ -592,7 +833,7 @@ class RootDuelGame {
         if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
 
         this.roundScoreTimer = setInterval(() => {
-            if (this.state !== 'PLAYING' || document.hidden) {
+            if (this.state !== 'PLAYING' || document.hidden || this.isPaused) {
                 if (this.state !== 'PLAYING') clearInterval(this.roundScoreTimer);
                 return;
             }
@@ -601,13 +842,28 @@ class RootDuelGame {
             if (this.roundPoints > 10) {
                 this.roundPoints--;
                 this.dom.pointsTicker.textContent = `+${this.roundPoints} ОЧКОВ`;
-            } else {
-                // If points reached minimum and exceeded 18s without buzz, round times out
-                const elapsed = (performance.now() - this.roundStartTime) / 1000;
-                if (elapsed >= 18) {
-                    clearInterval(this.roundScoreTimer);
-                    this.onRoundTimeout();
+            }
+
+            const elapsed = (performance.now() - this.roundStartTime) / 1000;
+
+            // Tension mode in last 3 seconds (15s to 18s)
+            if (elapsed >= 15 && elapsed < 18) {
+                this.dom.pointsTicker.classList.add('tension-pulse');
+                const remainingSec = Math.max(1, Math.ceil(18 - elapsed));
+                if (remainingSec !== this.lastTensionTickSec) {
+                    this.lastTensionTickSec = remainingSec;
+                    const urgency = Math.min(3, 4 - remainingSec);
+                    this.audio.playTensionTick(urgency);
                 }
+            } else if (elapsed < 15) {
+                this.dom.pointsTicker.classList.remove('tension-pulse');
+            }
+
+            // Round timeout after 18 seconds
+            if (elapsed >= 18) {
+                clearInterval(this.roundScoreTimer);
+                this.dom.pointsTicker.classList.remove('tension-pulse');
+                this.onRoundTimeout();
             }
         }, 280);
     }
@@ -705,6 +961,11 @@ class RootDuelGame {
 
             if (timerBar) {
                 timerBar.style.width = `${(remainingRatio * 100).toFixed(1)}%`;
+                if (remainingRatio <= 0.35) {
+                    timerBar.classList.add('timer-danger');
+                } else {
+                    timerBar.classList.remove('timer-danger');
+                }
             }
 
             if (remainingRatio <= 0) {
@@ -723,11 +984,11 @@ class RootDuelGame {
         }
         if (this.dom.p1TimerBar) {
             this.dom.p1TimerBar.style.width = '0%';
-            this.dom.p1TimerBar.classList.remove('active');
+            this.dom.p1TimerBar.classList.remove('active', 'timer-danger');
         }
         if (this.dom.p2TimerBar) {
             this.dom.p2TimerBar.style.width = '0%';
-            this.dom.p2TimerBar.classList.remove('active');
+            this.dom.p2TimerBar.classList.remove('active', 'timer-danger');
         }
     }
 
@@ -847,12 +1108,30 @@ class RootDuelGame {
             console.warn('Audio error:', e);
         }
 
+        this.triggerHaptic('correct');
+
+        // Streak & Combo Logic
+        this.players[playerId].streak++;
+        if (this.players[playerId].streak > this.players[playerId].maxStreak) {
+            this.players[playerId].maxStreak = this.players[playerId].streak;
+        }
+
+        const streak = this.players[playerId].streak;
+        let comboBonus = 0;
+        if (streak >= 2) {
+            comboBonus = 5;
+            this.audio.playCombo(streak);
+            this.triggerHaptic('combo');
+            this.updateComboBadge(playerId, streak);
+        }
+
         const earned = this.roundPoints;
-        this.players[playerId].score += earned;
+        this.players[playerId].score += (earned + comboBonus);
         this.players[playerId].correctCount++;
 
         this.updateScoresUI();
-        this.setPlayerStatus(playerId, `ВЕРНО! +${earned}`, 'correct');
+        const statusBonus = comboBonus > 0 ? ` (+${earned}+${comboBonus}🔥)` : ` +${earned}`;
+        this.setPlayerStatus(playerId, `ВЕРНО!${statusBonus}`, 'correct');
         this.flashZone(playerId, 'success');
 
         // Close keypads and disable buzzers during reveal
@@ -865,7 +1144,8 @@ class RootDuelGame {
         this.dom.p2BuzzBtn.classList.remove('pulse');
 
         // Board Announcement
-        this.setBoardFeedback(`ПРАВИЛЬНО! ${this.players[playerId].name} +${earned}`, 'correct');
+        const comboMsg = comboBonus > 0 ? ` (🔥 КОМБО x${streak}: +${comboBonus}!)` : '';
+        this.setBoardFeedback(`ПРАВИЛЬНО! ${this.players[playerId].name} +${earned}${comboMsg}`, 'correct');
         this.dom.boardHint.textContent = `Ответ: ${this.currentQuestion.answer} (${this.currentQuestion.hint})`;
 
         // Wait then next question
@@ -889,7 +1169,11 @@ class RootDuelGame {
         } catch (e) {
             console.warn('Audio error:', e);
         }
+
+        this.triggerHaptic('wrong');
         this.players[playerId].wrongCount++;
+        this.players[playerId].streak = 0;
+        this.updateComboBadge(playerId, 0);
 
         // Penalty (-5 points)
         const penalty = 5;
@@ -936,6 +1220,11 @@ class RootDuelGame {
         this.stopAnswerCountdown();
         if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
         if (this.ai) this.ai.cancel();
+
+        this.players[1].streak = 0;
+        this.players[2].streak = 0;
+        this.updateComboBadge(1, 0);
+        this.updateComboBadge(2, 0);
 
         for (let i = 1; i <= 2; i++) {
             this.setPlayerKeypadActive(i, false);
@@ -1010,14 +1299,27 @@ class RootDuelGame {
 
         let winnerName, winnerSub;
         if (s1 > s2) {
+            this.seriesScore[1]++;
             winnerName = `ПОБЕДИТЕЛЬ: ${this.players[1].name}!`;
             winnerSub = `С преимуществом в ${s1 - s2} очков`;
         } else if (s2 > s1) {
+            this.seriesScore[2]++;
             winnerName = `ПОБЕДИТЕЛЬ: ${this.players[2].name}!`;
             winnerSub = `С преимуществом в ${s2 - s1} очков`;
         } else {
             winnerName = 'НИЧЬЯ!';
             winnerSub = `Оба участника набрали по ${s1} очков!`;
+        }
+
+        // Save series score & update UI
+        localStorage.setItem('root_duel_series', JSON.stringify(this.seriesScore));
+        this.updateSeriesUI();
+
+        // High score for 1P or endless
+        if (s1 > this.highScore) {
+            this.highScore = s1;
+            localStorage.setItem('root_duel_high_score', this.highScore.toString());
+            winnerSub += ` • 🏆 НОВЫЙ РЕКОРД: ${this.highScore}!`;
         }
 
         this.dom.winnerText.textContent = winnerName;
@@ -1028,6 +1330,8 @@ class RootDuelGame {
 
         this.dom.p1FinalScore.textContent = s1;
         this.dom.p2FinalScore.textContent = s2;
+        if (this.dom.p1FinalStreak) this.dom.p1FinalStreak.textContent = `x${this.players[1].maxStreak || 0}`;
+        if (this.dom.p2FinalStreak) this.dom.p2FinalStreak.textContent = `x${this.players[2].maxStreak || 0}`;
         this.dom.p1FinalCorrect.textContent = this.players[1].correctCount;
         this.dom.p2FinalCorrect.textContent = this.players[2].correctCount;
         this.dom.p1FinalErrors.textContent = this.players[1].wrongCount;

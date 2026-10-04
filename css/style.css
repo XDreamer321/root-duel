@@ -247,6 +247,7 @@ body::before {
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
 
 .choice-btn {
     background: rgba(255, 255, 255, 0.06);
@@ -431,6 +432,31 @@ body::before {
 .player-status-badge.wrong { background: var(--neon-red); color: #fff; }
 .player-status-badge.rebound { background: var(--neon-gold); color: #000; animation: pulseGlow 0.8s infinite; }
 
+/* Combo Fire Badge */
+.combo-badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, #ff6d00, #ff1744);
+    border: 1px solid #ffd000;
+    border-radius: 4px;
+    padding: 1px 6px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(255, 109, 0, 0.6);
+    animation: comboBurn 0.7s infinite alternate ease-in-out;
+    display: inline-flex;
+    align-items: center;
+}
+
+.combo-badge.hidden {
+    display: none !important;
+}
+
+@keyframes comboBurn {
+    0% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 8px rgba(255, 109, 0, 0.5); }
+    100% { transform: scale(1.08); filter: brightness(1.3); box-shadow: 0 0 16px rgba(255, 23, 68, 0.8); }
+}
+
 /* Answer Countdown Timer Bar */
 .answer-timer-track {
     width: 100%;
@@ -446,6 +472,11 @@ body::before {
     height: 100%;
     background: linear-gradient(90deg, var(--neon-green), var(--neon-gold), var(--neon-red));
     transition: width 0.05s linear;
+}
+
+.answer-timer-bar.timer-danger {
+    background: linear-gradient(90deg, #ff1744, #ff5252) !important;
+    box-shadow: 0 0 12px rgba(255, 23, 68, 0.8) !important;
 }
 
 /* Answer Input Display Box & Submit Action */
@@ -635,6 +666,22 @@ body::before {
     gap: 4px;
 }
 
+.keypad-row-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+}
+
+.key-btn.key-clear {
+    background: rgba(255, 82, 82, 0.16);
+    border-color: rgba(255, 82, 82, 0.45);
+    color: #ff8a80;
+    font-weight: 800;
+}
+
+.key-btn.key-clear:active {
+    background: rgba(255, 82, 82, 0.35);
+    transform: scale(0.92);
+}
+
 .key-btn {
     height: 34px;
     min-height: 34px;
@@ -747,6 +794,23 @@ body::before {
     letter-spacing: 1px;
 }
 
+.strip-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.series-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--neon-gold);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 208, 0, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+    letter-spacing: 0.5px;
+}
+
 .points-ticker {
     color: var(--neon-gold);
     font-size: 13px;
@@ -756,6 +820,20 @@ body::before {
     padding: 1px 6px;
     border-radius: 4px;
     border: 1px solid rgba(255, 208, 0, 0.35);
+    transition: all 0.2s ease;
+}
+
+.points-ticker.tension-pulse {
+    color: #ff5252 !important;
+    border-color: #ff5252 !important;
+    background: rgba(255, 23, 68, 0.25) !important;
+    box-shadow: 0 0 15px rgba(255, 82, 82, 0.8) !important;
+    animation: tensionAlert 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes tensionAlert {
+    0% { transform: scale(1); filter: brightness(1); }
+    100% { transform: scale(1.08); filter: brightness(1.4); }
 }
 
 .math-formula-container {
@@ -958,6 +1036,35 @@ body::before {
     background: rgba(255, 255, 255, 0.15);
 }
 
+.series-score-banner {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--neon-gold);
+    background: rgba(255, 208, 0, 0.12);
+    border: 1px solid rgba(255, 208, 0, 0.35);
+    border-radius: 8px;
+    padding: 6px 12px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(255, 208, 0, 0.2);
+    width: 100%;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #90a4ae;
+    font-size: 12px;
+    font-family: var(--font-display);
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 4px;
+    transition: color 0.15s;
+}
+
+.btn-link:active {
+    color: #fff;
+}
+
 /* ==========================================================================
    MODAL / POPUP
    ========================================================================== */
@@ -988,6 +1095,70 @@ body::before {
     border-radius: 14px;
     padding: 18px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+.pause-modal-content {
+    max-width: 340px;
+    text-align: center;
+}
+
+.pause-stats-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 12px;
+    margin: 10px 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pause-round-text {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--neon-gold);
+}
+
+.pause-score-text {
+    font-size: 14px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.pause-series-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.pause-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.setting-toggle-box {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--neon-gold);
 }
 
 .modal-header {
