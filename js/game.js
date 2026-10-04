@@ -777,6 +777,11 @@ class RootDuelGame {
 
     handleCorrectAnswer(playerId) {
         this.state = 'REVEAL';
+        if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
+        this.stopAnswerCountdown();
+        if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
+        if (this.ai) this.ai.cancel();
+
         this.audio.playCorrect();
 
         const earned = this.roundPoints;
@@ -787,6 +792,15 @@ class RootDuelGame {
         this.setPlayerStatus(playerId, `ВЕРНО! +${earned}`, 'correct');
         this.flashZone(playerId, 'success');
 
+        // Close keypads and disable buzzers during reveal
+        for (let i = 1; i <= 2; i++) {
+            this.setPlayerKeypadActive(i, false);
+        }
+        this.dom.p1BuzzBtn.disabled = true;
+        this.dom.p2BuzzBtn.disabled = true;
+        this.dom.p1BuzzBtn.classList.remove('pulse');
+        this.dom.p2BuzzBtn.classList.remove('pulse');
+
         // Board Announcement
         this.dom.boardFeedback.textContent = `ПРАВИЛЬНО! ${this.players[playerId].name} +${earned}`;
         this.dom.boardFeedback.className = 'board-feedback correct';
@@ -794,11 +808,19 @@ class RootDuelGame {
 
         // Wait then next question
         setTimeout(() => {
-            this.nextRound();
+            if (this.state === 'REVEAL') {
+                this.nextRound();
+            }
         }, 2200);
     }
 
     handleWrongAnswer(playerId, isTimeout) {
+        this.state = 'REVEAL';
+        if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
+        this.stopAnswerCountdown();
+        if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
+        if (this.ai) this.ai.cancel();
+
         this.audio.playWrong();
         this.players[playerId].wrongCount++;
 
@@ -810,38 +832,26 @@ class RootDuelGame {
         this.setPlayerStatus(playerId, isTimeout ? 'ВРЕМЯ ВЫШЛО! -5' : 'НЕВЕРНО! -5', 'wrong');
         this.shakeZone(playerId);
 
-        // Check for rebound chance for opponent
-        const otherPlayer = playerId === 1 ? 2 : 1;
-        if (this.reboundAvailable) {
-            this.reboundAvailable = false; // Only 1 rebound allowed per question
-            this.state = 'PLAYING';
-            this.activePlayer = null;
-
-            // Opponent now gets a chance
-            this.setPlayerKeypadActive(playerId, false);
-            this.setPlayerStatus(playerId, 'ОШИБКА!', 'locked');
-
-            this.dom.boardFeedback.textContent = `ОШИБКА! ШАНС ДЛЯ ${this.players[otherPlayer].name}!`;
-            this.dom.boardFeedback.className = 'board-feedback warning';
-
-            // Unlock other player buzz
-            const otherBtn = otherPlayer === 1 ? this.dom.p1BuzzBtn : this.dom.p2BuzzBtn;
-            otherBtn.disabled = (otherPlayer === 2 && this.mode === '1p');
-            otherBtn.classList.add('pulse');
-            this.setPlayerStatus(otherPlayer, 'ТВОЙ ШАНС! ЖМИ!', 'rebound');
-
-            // If AI is opponent, trigger AI rebound
-            if (otherPlayer === 2 && this.mode === '1p') {
-                this.ai.onRebound(this.currentQuestion);
-            }
-
-            // Start short window for rebound (8 seconds)
-            this.roundStartTime = performance.now();
-            this.startPointsDecay();
-        } else {
-            // Both failed or no rebound
-            this.revealAnswerAfterFailure();
+        // Close keypads and disable buzzers during reveal
+        for (let i = 1; i <= 2; i++) {
+            this.setPlayerKeypadActive(i, false);
         }
+        this.dom.p1BuzzBtn.disabled = true;
+        this.dom.p2BuzzBtn.disabled = true;
+        this.dom.p1BuzzBtn.classList.remove('pulse');
+        this.dom.p2BuzzBtn.classList.remove('pulse');
+
+        // Board Announcement with correct answer and hint
+        this.dom.boardFeedback.textContent = isTimeout ? 'ВРЕМЯ ВЫШЛО!' : `ОШИБКА ${this.players[playerId].name}! (-5)`;
+        this.dom.boardFeedback.className = 'board-feedback wrong';
+        this.dom.boardHint.textContent = `Правильный ответ: ${this.currentQuestion.answer} (${this.currentQuestion.hint})`;
+
+        // Automatically pass turn to next round
+        setTimeout(() => {
+            if (this.state === 'REVEAL') {
+                this.nextRound();
+            }
+        }, 2200);
     }
 
     onRoundTimeout() {
@@ -851,20 +861,30 @@ class RootDuelGame {
 
     revealAnswerAfterFailure() {
         this.state = 'REVEAL';
+        if (this.roundScoreTimer) clearInterval(this.roundScoreTimer);
         this.stopAnswerCountdown();
+        if (this.dom.arena) this.dom.arena.classList.remove('has-active-player');
+        if (this.ai) this.ai.cancel();
 
         for (let i = 1; i <= 2; i++) {
             this.setPlayerKeypadActive(i, false);
             this.setPlayerStatus(i, 'РАУНД ОКОНЧЕН', 'idle');
         }
 
+        this.dom.p1BuzzBtn.disabled = true;
+        this.dom.p2BuzzBtn.disabled = true;
+        this.dom.p1BuzzBtn.classList.remove('pulse');
+        this.dom.p2BuzzBtn.classList.remove('pulse');
+
         this.dom.boardFeedback.textContent = `ПРАВИЛЬНЫЙ ОТВЕТ: ${this.currentQuestion.answer}`;
         this.dom.boardFeedback.className = 'board-feedback neutral';
         this.dom.boardHint.textContent = this.currentQuestion.hint;
 
         setTimeout(() => {
-            this.nextRound();
-        }, 2500);
+            if (this.state === 'REVEAL') {
+                this.nextRound();
+            }
+        }, 2200);
     }
 
     /* -------------------------------------------------------------
